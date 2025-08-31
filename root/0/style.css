@@ -4,5 +4,42 @@ body {
 
 article {
     background-color: #f2e9e4;
-    width: 90%
+    width: 90%;
+    margin: 30px
+}
+
+.image-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+}
+
+.gallery-photo {
+    width: 150px;
+    height: auto;
+    border-radius: 19px;
+    object-fit: cover
+}
+
+figcaption {
+    font-size: 12px;
+    font-family: 'Courier', serif
+}
+
+figure {
+    text-align: center;
+    width: 200px;
+}
+
+article p {
+    font-family: 'Helvetica', sans-serif;
+    padding-top: 0px;
+    font-size: 14px
+}
+
+article img {
+    width: 300px;
+    height: auto;
+    border-radius: 19px
 }
