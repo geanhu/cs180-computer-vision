@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Project 1</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../0/style.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<main role="main">
+    <h1>📸 Project 1</h1>
+    <h2>images of the russian empire</h2>
+
+    <article>
+        <h3> Overview </h3>
+
+        <p>
+            Before the color camera, Prokudin-Gorskii captured "RGB" photos by capturing photos of the
+            same subject using a red, green, and blue filters, independently. These triplets of photos, once
+            aligned with an appropriate alignment algorithm (focus of this project), will reconstruct
+            his images in color.
+        </p>
+    
+    </article>
+
+    <article>
+        <h3> Exhaustive search alignment of small images </h3>
+
+        <h4> Method </h4>
+        <p>
+            For smaller .jpg images, I utilized an exhaustive search over all (horizontal, vertical) combinations of
+            image translations for a [-15, 15] range. 
+        </p>
+        <ol>
+            <li>
+                I pre-processed the images by centering the values of each channel, i.e. by subtracting the mean of a channel 
+                from each pixel in the image, in order for the algorithm to focus on aligning intensity differences rather than raw intensity.
+            </li>
+            <li>
+                To prevent the alignment algorithm from being skewed to focus on aligning the black edges of the images, 
+                I also cropped the images by 10% from each edge.
+            </li>
+            <li>
+                I utilized <code>np.roll</code> to translate my images, so to prevent the rolled-over pixels from
+                negatively influencing the alignment, I sliced out only the internal, non-rolled region of my channel and
+                reference channel.
+            </li>
+            <li>
+                I then calculated the Normalized Cross Correlation (NCC) between the internal region of my channel I am 
+                aligning (red & green) and the reference channel (blue). I reasoned that NCC is a better metric for alignment than
+                other metrics, such as the L2 Norm, since the normalization process of dividing each image by its norm is 
+                essentially normalizing for the standard deviation in the images. This allows the algorithm to focus on features in
+                the image, rather than contrast differences between color channels.
+            </li>
+        </ol>
+
+        <h4> Images </h4>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/cathedral.jpg" class="gallery-photo">
+                <figcaption>
+                    cathedral.jpg 
+                </figcaption>
+                <figcaption>
+                    <code>R (3, 12) | G (2, 5)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/monastery.jpg" class="gallery-photo">
+                <figcaption>
+                    monastery.jpg
+                </figcaption>
+                <figcaption>
+                    <code>R (2, 3) | G (2, -3)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/tobolsk.jpg" class="gallery-photo">
+                <figcaption>
+                    tobolsk.jpg
+                </figcaption>
+                <figcaption>
+                    <code>R (3, 6) | G (3, 3)</code>
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h3> Image pyramid alignment of large images </h3>
+
+        <h4> Method </h4>
+        <p>
+            For larger images where the computational cost of exhaustive search is prohibitive,
+            I applied my alignment algorithm to an image pyramid instead.
+        </p>
+        <ol>
+            <li>
+                I downsample the channels using <code>cv.resize</code> by a scale of 1/2
+                until the image is small enough (less than 500 pixels in the largest dimension) 
+                for an exhaustive search. I apply a Gaussian blur on the image before downsampling
+                by the <code>anti_aliasing</code> parameter to help minimize loss of features when
+                downsampling.
+            </li>
+            <li>
+                I complete an exhaustive search alignment on the downsampled image using the same 
+                algorithm described above to find the best (x, y) alignment on the small image.
+            </li>
+            <li>
+                I then scale the (x, y) displacement by 2 to reverse the downsampling and use 
+                (2x, 2y) as the starting point for the exhaustive alignment search on the larger image.
+                For computational efficiency, since calculating the NCC becomes more costly for larger images,
+                the search on larger images is only over [-5, 5].
+            </li>
+            <li>
+                I continue passing the (x, y) displacement guess from smaller images down the image pyramid
+                and refining at each level until I find the best displacement for the full size image.
+            </li>
+        </ol>
+
+        <h4> Images </h4>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/church.jpg" class="gallery-photo">
+                <figcaption>
+                    church.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (-4, 58) | G (4, 25)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/harvesters.jpg" class="gallery-photo">
+                <figcaption>
+                    harvesters.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (13, 124) | G (17, 60)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/icon.jpg" class="gallery-photo">
+                <figcaption>
+                    icon.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (23, 89) | G (17, 41)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/italil.jpg" class="gallery-photo">
+                <figcaption>
+                    italil.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (35, 77) | G (21, 38)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/lastochikino.jpg" class="gallery-photo">
+                <figcaption>
+                    lastochikino.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (-9, 75) | G (-2, -3)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/lugano.jpg" class="gallery-photo">
+                <figcaption>
+                    lugano.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (-29, 93) | G (-16, 41)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/melons.jpg" class="gallery-photo">
+                <figcaption>
+                    melons.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (13, 178) | G (11, 82)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/self_portrait.jpg" class="gallery-photo">
+                <figcaption>
+                    self_portrait.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (37, 176) | G (29, 79)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/siren.jpg" class="gallery-photo">
+                <figcaption>
+                    siren.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (-25, 96) | G (-6, 49)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/three_generations.jpg" class="gallery-photo">
+                <figcaption>
+                    three_generations.tif
+                </figcaption>
+                <figcaption>
+                    <code>R (11, 112) | G (14, 53)</code>
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h3> Problem: aligning <code>emir.tif</code></h3>
+
+        <p>
+            My algorithm as described above had much difficulty aligning <code>emir.tif</code>,
+            which is likely because this focus of this image exhibits mostly vibrant blues. This
+            causes the blue channel pixels to be low value with the red channel pixels of high value, 
+            which would deflate the NCC for the correct displacement, as shown below.
+        </p>
+        <img src="./images/emir-problem.png">
+
+        <h4> Method </h4>
+        <p>
+            Despite the red and blue channels having almost opposite pixel intensities, the edge features
+            of light to dark transition are still preserved between the two channels, so alignment may benefit
+            from aligning the edges in the image instead of all pixels. 
+        </p>
+        <ol>
+            <li>
+                To detect edges, I first create simple 3x3 kernels to detect horizontal and vertical edges.
+                The horizontal edge kernel is <code>[[0, 0, 0], [-1, 0, 1], [0, 0, 0]]</code> and analogously,
+                the vertical edge kernel is <code>[[0, -1, 0], [0, 0, 0], [0, 1, 0]]</code>. When scanning a line
+                of pixels, this kernel will output a high output value (edge detected) if the line transitions from
+                a high to low value or vice versa. 
+            </li>
+            <li>
+                The absolute value of the horizontal and vertical edge kernels are
+                summed to create an edge-only image.
+            </li>
+            <li>
+                Upon only implementing the above steps, I noticed some edges appear blurry, so I binarize the
+                image using a pixel value threshold of <code>0.2</code>.
+            </li>
+            <li>
+                The image pyramid alignment algorithm is then used on these edge features to yield the optimal
+                alignment.
+            </li>
+        </ol>
+        <img src="./images/emir_edge.jpg">
+
+        <h4> Image </h4>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/emir.jpg" class="gallery-photo">
+                <figcaption>
+                    emir.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (40, 107) | G (24, 49)</code>
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h3> Images of my choice </h3>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/mills.jpg" class="gallery-photo">
+                <figcaption>
+                    mills.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (23, 125) | G (14, 56)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/dome.jpg" class="gallery-photo">
+                <figcaption>
+                    dome.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (-6, 125) | G (-4, 52)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/boat.jpg" class="gallery-photo">
+                <figcaption>
+                    boat.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (81, 134) | G (39, 42)</code>
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+</main>
+
+</html>

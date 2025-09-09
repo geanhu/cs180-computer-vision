@@ -1,0 +1,22 @@
+.gallery-photo {
+    width: 250px;
+    height: auto;
+    border-radius: 19px;
+    object-fit: cover
+}
+
+figure {
+    text-align: center;
+    width: 300px;
+}
+
+.image-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+}
+
+article img {
+    width: 500px
+}
