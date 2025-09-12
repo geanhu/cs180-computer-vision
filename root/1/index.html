@@ -29,29 +29,55 @@
 
         <h4> Method </h4>
         <p>
-            For smaller .jpg images, I utilized an exhaustive search over all (horizontal, vertical) combinations of
-            image translations for a [-15, 15] range. 
+            For smaller .jpg images, I utilized a naive exhaustive search over possible image translations. 
         </p>
         <ol>
             <li>
-                I pre-processed the images by centering the values of each channel, i.e. by subtracting the mean of a channel 
-                from each pixel in the image, in order for the algorithm to focus on aligning intensity differences rather than raw intensity.
+                I pre-processed the images by centering the values of each channel, i.e. by subtracting the mean of a channel's pixel intensities 
+                from each pixel in the image. This should help the algorithm focus on matching image features instead of overall differences in 
+                brightness between channels.
             </li>
             <li>
                 To prevent the alignment algorithm from being skewed to focus on aligning the black edges of the images, 
                 I also cropped the images by 10% from each edge.
             </li>
             <li>
-                I utilized <code>np.roll</code> to translate my images, so to prevent the rolled-over pixels from
-                negatively influencing the alignment, I sliced out only the internal, non-rolled region of my channel and
-                reference channel.
+                After these pre-processing steps, I translated my channel to align by each (horizontal, vertical) combination of 
+                image translations for a [-15, 15] range. Because I used <code>np.roll</code> to prevent the rolled-over pixels from
+                negatively influencing the alignment, I sliced out only the internal, non-rolled region of my channel to align and
+                the corresponding region in the reference channel.
+                <ol>
+                    <li>
+                        For left translations, -x, and analogously, upward translations -y, I slice [0: width - x] to exclude the
+                        rightmost x pixels that have been rolled over. I also slice [0: width - x] in the reference channel, as the left
+                        shift causes the rightmost x pixels in the reference channel to align with the rolled over portions of the image, which
+                        we want to discard.
+                    </li>
+                    <li>
+                        Analogously, right translations +x and downward translations +y, require slicing [x: width] to include
+                        only the internal region of the image that excludes any rolled-over portions.
+                    </li>
+                </ol>
             </li>
             <li>
                 I then calculated the Normalized Cross Correlation (NCC) between the internal region of my channel I am 
-                aligning (red & green) and the reference channel (blue). I reasoned that NCC is a better metric for alignment than
-                other metrics, such as the L2 Norm, since the normalization process of dividing each image by its norm is 
-                essentially normalizing for the standard deviation in the images. This allows the algorithm to focus on features in
-                the image, rather than contrast differences between color channels.
+                aligning (red & green) and the reference channel (blue) as a metric for how good the current alignment is. Because
+                the channels are the same size, the NCC can be found by simply dividing both the aligning channel and reference channel by
+                its Euclidean norm (normalization), then finding the dot product of the resulting two normalized matrices (cross correlation). 
+                Because we can interpret this dot product as the cosine similarity between two unit vectors, the ideal alignment should 
+                return a NCC of cos(0) = 1, so I am searching for the max NCC alignment.
+                <ol>
+                    <li>
+                        I reasoned that NCC is a better metric for alignment than
+                        other metrics, such as the L2 Norm, since the normalization process of dividing each image by its norm is 
+                        essentially normalizing for the standard deviation in the images. This allows the algorithm to focus on features in
+                        the image, rather than contrast differences between color channels.
+                    </li>
+                </ol>
+            </li>
+            <li>
+                After testing each (horizontal, vertical) translation in [-15, 15], I return the translation with the largest
+                NCC as the optimal alignment of the two channels.
             </li>
         </ol>
 
@@ -96,25 +122,26 @@
         <h4> Method </h4>
         <p>
             For larger images where the computational cost of exhaustive search is prohibitive,
-            I applied my alignment algorithm to an image pyramid instead.
+            I applied my single-scale alignment algorithm using an image pyramid.
         </p>
         <ol>
             <li>
-                I downsample the channels using <code>cv.resize</code> by a scale of 1/2
-                until the image is small enough (less than 500 pixels in the largest dimension) 
-                for an exhaustive search. I apply a Gaussian blur on the image before downsampling
-                by the <code>anti_aliasing</code> parameter to help minimize loss of features when
-                downsampling.
+                To first construct the image pyramid, I downsample the image channels using 
+                <code>cv.resize</code> by a scale of 1/2 until the image is small enough 
+                (less than 500 pixels in the largest dimension) to utilize the exhaustive 
+                search single-scale alignment algorithm presented above. I apply a Gaussian blur 
+                on the image before downsampling by the <code>anti_aliasing</code> parameter 
+                to help minimize loss of features and prevent emergence of spurious features when downsampling.
             </li>
             <li>
-                I complete an exhaustive search alignment on the downsampled image using the same 
-                algorithm described above to find the best (x, y) alignment on the small image.
+                I complete an exhaustive search alignment on the downsampled image using the single-scale
+                alignment algorithm described above to find the best (x, y) alignment on the small image.
             </li>
             <li>
                 I then scale the (x, y) displacement by 2 to reverse the downsampling and use 
-                (2x, 2y) as the starting point for the exhaustive alignment search on the larger image.
+                (2x, 2y) as the starting estimate for the exhaustive alignment search on the larger image.
                 For computational efficiency, since calculating the NCC becomes more costly for larger images,
-                the search on larger images is only over [-5, 5].
+                the search on larger images is only over [-10, 10].
             </li>
             <li>
                 I continue passing the (x, y) displacement guess from smaller images down the image pyramid
@@ -125,12 +152,32 @@
         <h4> Images </h4>
         <div class="image-gallery">
             <figure>
+                <img src="./images/cathedral.jpg" class="gallery-photo">
+                <figcaption>
+                    cathedral.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (3, 12) | G (2, 5)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
                 <img src="./images/church.jpg" class="gallery-photo">
                 <figcaption>
                     church.tif 
                 </figcaption>
                 <figcaption>
                     <code>R (-4, 58) | G (4, 25)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/emir.jpg" class="gallery-photo">
+                <figcaption>
+                    emir.tif 
+                </figcaption>
+                <figcaption>
+                    <code>R (42, 68) | G (24, 49)</code>
                 </figcaption>
             </figure>
 
@@ -185,6 +232,16 @@
             </figure>
 
             <figure>
+                <img src="./images/monastery.jpg" class="gallery-photo">
+                <figcaption>
+                    monastery.jpg
+                </figcaption>
+                <figcaption>
+                    <code>R (2, 3) | G (2, -3)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
                 <img src="./images/melons.jpg" class="gallery-photo">
                 <figcaption>
                     melons.tif
@@ -221,6 +278,16 @@
                 </figcaption>
                 <figcaption>
                     <code>R (11, 112) | G (14, 53)</code>
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/tobolsk.jpg" class="gallery-photo">
+                <figcaption>
+                    tobolsk.jpg
+                </figcaption>
+                <figcaption>
+                    <code>R (3, 6) | G (3, 3)</code>
                 </figcaption>
             </figure>
         </div>
@@ -270,7 +337,7 @@
 
         <div class="image-gallery">
             <figure>
-                <img src="./images/emir.jpg" class="gallery-photo">
+                <img src="./images/emir-better.jpg" class="gallery-photo">
                 <figcaption>
                     emir.tif 
                 </figcaption>

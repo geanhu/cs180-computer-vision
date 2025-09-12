@@ -1,5 +1,5 @@
 .gallery-photo {
-    width: 250px;
+    width: 450px;
     height: auto;
     border-radius: 19px;
     object-fit: cover
@@ -7,7 +7,7 @@
 
 figure {
     text-align: center;
-    width: 300px;
+    width: 500px;
 }
 
 .image-gallery {
@@ -19,4 +19,8 @@ figure {
 
 article img {
     width: 500px
+}
+
+ol ol {
+    list-style-type: lower-alpha;
 }
