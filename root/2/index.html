@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Project 2</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../0/style.css">
+    <link rel="stylesheet" href="../1/style.css">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+
+<main role="main">
+    <h1>📸 Project 2</h1>
+    <h2>fun with filters & frequencies</h2>
+
+    <p>
+        The most important thing I learned from this project was that visualizing details versus larger
+        features being preserved is much more intuitive to think of and visualize as high and low frequencies.
+    </p>
+
+     <article>
+        <h4> Part 1.1 </h4>
+        
+        <p>
+            Utility function to zero-pad images to the same 
+            shape before & after convolution
+        </p>
+        <pre>
+            <code class="language-python">
+                def padding(
+                    arr: np.ndarray,
+                    shape: tuple,
+                ):
+                    pad_h = int((shape[0] - 1) / 2)
+                    pad_w = int((shape[1] - 1) / 2)
+                    padded_arr = np.zeros((arr.shape[0] + 2 * pad_h, arr.shape[1] + 2 * pad_w))
+                    if pad_h > 0 and pad_w > 0:
+                        padded_arr[pad_h:-pad_h, pad_w:-pad_w] = arr
+                    elif pad_h > 0:
+                        padded_arr[pad_h:-pad_h, :] = arr
+                    elif pad_w > 0:
+                        padded_arr[:, pad_w:-pad_w] = arr
+                    else:
+                        return arr
+                    return padded_arr
+            </code>
+        </pre>
+
+        <p>
+            Convolution naively implemented with 4 for loops,
+            2 for iterating x & y dimensions of the image and
+            2 for iterating x & y dimensions of the filter.
+        </p>
+        <pre>
+            <code class="language-python">
+                def conv4(
+                    arr: np.ndarray,
+                    filter: np.ndarray
+                ):
+                    #Padding
+                    padded_arr = padding(arr, filter.shape)
+
+                    #Flip filter
+                    filter = np.flip(filter)
+
+                    '''
+                    Convolution
+                    '''
+                    result_arr = np.zeros((arr.shape[0], arr.shape[1]))
+                    #Loop through each convolution position in image
+                    for arr_i in tqdm(range(padded_arr.shape[0] - filter.shape[0] + 1)):
+                        for arr_j in range(padded_arr.shape[1] - filter.shape[1] + 1):
+                            total = 0
+                            #Loop through each filter position
+                            for filter_i in range(filter.shape[0]):
+                                for filter_j in range(filter.shape[1]):
+                                    #Multiply at this position
+                                    arr_pos = padded_arr[arr_i + filter_i, arr_j + filter_j]
+                                    total += arr_pos * filter[filter_i, filter_j]
+                            #Value = sum of convolved values
+                            result_arr[arr_i, arr_j] = total
+                    return result_arr
+            </code>
+        </pre>
+
+        <p>
+            Convolution naively implemented with 2 for loops,
+            2 for iterating x & y dimensions of the image and
+            the entire filter is multiplied to the corresponding
+            window in the image with vectorized elementwise multiply instead.
+        </p>
+        <pre>
+            <code class="language-python">
+                def conv2(
+                    arr: np.ndarray,
+                    filter: np.ndarray
+                ):
+                    #Padding
+                    padded_arr = padding(arr, filter.shape)
+
+                    #Flip filter
+                    filter = np.flip(filter)
+
+                    '''
+                    Convolution
+                    '''
+                    result_arr = np.zeros((arr.shape[0], arr.shape[1]))
+                    #Loop through each convolution position in image
+                    for arr_i in tqdm(range(padded_arr.shape[0] - filter.shape[0] + 1)):
+                        for arr_j in range(padded_arr.shape[1] - filter.shape[1] + 1):
+                            #Use elementwise multiply instead
+                            result_pos = np.multiply(
+                                padded_arr[arr_i:arr_i + filter.shape[0], arr_j:arr_j + filter.shape[1]],
+                                filter
+                            )
+                            result_arr[arr_i, arr_j] = np.sum(result_pos)
+                    return result_arr
+            </code>
+        </pre>
+
+        <p>
+            Compared with <code>scipy.signal.convolve2d</code>, the implementation of
+            convolution using 4 for loops is much slower, since it takes up the full
+            O(n<sup>2</sup>k<sup>2</sup>) runtime (assuming square image with dimension n 
+            and square kernel with dimension k for simplicity). Using two for loops and vectorized
+            NumPy computation for the inner for loops instead does speed up the computation for the
+            k<sup>2</sup> factor, but not as much as <code>scipy.signal.convolve2d</code>, which would
+            be using vectorized code for all of the for loops. The documentation for scipy's <code>fftconvolve</code>
+            function states that <code>convolve2d</code> can use FFT-based convolution, which would
+            be much faster than naive calculation, if the kernel size is large enough.
+        </p>
+        <p>
+            In naive implementation, boundaries are handled with zero-padding, which is the same behavior
+            as setting the <code>boundary</code> option in <code>convolve2d</code> to <code>'fill'</code>
+            with the default 0 value. However, <code>convolve2d</code> usefully offers symmetric padding or 
+            wrap padding (somewhat like Project 1), which might be a good alternative in cases where zero-padding 
+            falsely brings out the edges of the image as feature edges.
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1-1-original.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1-1-box.jpg" class="gallery-photo">
+                <figcaption>
+                    9x9 box filter
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1-1-difference.jpg" class="gallery-photo">
+                <figcaption>
+                    D<sub>x</sub> and D<sub>y</sub> difference operator
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h4>Part 1.2</h4>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1-2-difference.jpg" class="gallery-photo">
+                <figcaption>
+                    D<sub>x</sub> and D<sub>y</sub> difference operator
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1-2-gradmagnitude.jpg" class="gallery-photo">
+                <figcaption>
+                    gradient magnitude (by Euclidean norm)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1-2-edge.jpg" class="gallery-photo">
+                <figcaption>
+                    binarize edges (threshold=0.4)
+                </figcaption>
+            </figure>
+            <p>
+                Picking a flat threshold of 0.4 sacrifices the finer edges in the cameraman's face
+                and the less obvious edges between the grass and lighter part of the camera's stand,
+                as well as edges of the building in the distance, but
+                but keeps noise in the grass from being detected as edges.
+            </p>
+        </div>
+    </article>
+
+    <article>
+        <h4>Part 1.3</h4>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1-3-gaussians.jpg" class="gallery-photo">
+                <figcaption>
+                    difference of gaussian filters
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1-3-gaussiansmooth.jpg" class="gallery-photo">
+                <figcaption>
+                    edges after gaussian smoothing
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1-3-differencegaussians.jpg" class="gallery-photo">
+                <figcaption>
+                    edges after difference of gaussians
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1-3-finitedifference.jpg" class="gallery-photo">
+                <figcaption>
+                    edges after 1.2 finite difference method (threshold = 0.15)
+                </figcaption>
+            </figure>
+            <p>
+                As clearly shown, applying the Difference of Gaussians filter allows much
+                less noise into the edges (especially in the grass) than the method
+                used in 1.2, because the finer details 
+                that are not "true edges" are removed in the blurring process.
+            </p>
+        </div>
+    </article>
+
+    <article>
+        <h4>Part 2.1</h4>
+
+        <p> 
+            The unsharp mask filter is created by first applying Gaussian blur to the photo,
+            which removes the higher frequencies. To then isolate only those higher frequencies, 
+            we subtract the blurred image from the original to remove the lower frequencies.
+            The isolated higher frequencies can then be additionally added back to the original
+            image to enhance the higher frequencies, giving a sharpening effect.
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2-1-taj.jpg"  class="gallery-photo">
+                <figcaption>
+                    unsharp mask applied to Taj Mahal
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/2-1-kanazawa.jpg" class="gallery-photo">
+                <figcaption>
+                    unsharp mask applied to Professor Kanazawa's photo
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/2-1-varyalpha.jpg" class="gallery-photo">
+                <figcaption>
+                    varying sharpening amount (alpha parameter)
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            As the alpha parameter increases (so as the higher frequency is restored with 
+            greater magnitude), the fine details in the image are brought out, which is most
+            obvious in the tiles on the Taj Mahal roof and the man in the foreground.
+        </p>
+    </article>
+
+    <article>
+        <h4> Part 2.2 </h4>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2-2-derek-nutmeg.jpg" class="gallery-photo">
+                <figcaption>
+                    Derek & Nutmeg hybrid image
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/2-2-pie-moon.jpg" class="gallery-photo">
+                <figcaption>
+                    pie & moon hybrid image
+                </figcaption>
+            </figure>
+
+            <figure>
+                <img src="./images/2-2-oski-labubu-process.jpg" class="gallery-photo">
+                <figcaption>
+                    oski & labubu hybrid image (full process)
+                </figcaption>
+            </figure>
+
+            <p>
+                As shown in the picture above, the hybrid image process involves:
+                <ol>
+                    <li>
+                        Aligning two images to match features (e.g. eyes are easiest)
+                    </li>
+                    <li>
+                        Filtering the high frequencies from one image and low frequencies from
+                        the other image. This is most obvious in the pre-filtered vs post-filtered 
+                        FFT; on the left where high frequencies are removed, only the center and major
+                        frequencies of the FFT are preserved, while on the right where low frequencies are removed,
+                        the frequencies concentrated in the center of the FFT image are no longer present.
+                    </li>
+                    <li>
+                        Adding the two images together, so that when viewed close up, high frequencies dominate; when
+                        viewed from further away, low frequencies dominate.
+                    </li>
+                </ol>
+            </p>
+
+            <figure>
+                <img src="./images/2-2-oski-labubu.jpg" class="gallery-photo">
+                <figcaption>
+                    oski & labubu hybrid image (final result)
+                </figcaption>
+            </figure>
+
+        </div>
+    </article>
+
+    <article>
+        <h4> Part 2.3 & 2.4 </h4>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2-3-orange-apple.jpg" class="gallery-photo">
+                <figcaption>
+                    orange & apple blending (reconstruct Figure 3.42 (a) through (l))
+                </figcaption>
+            </figure>
+
+            <p>
+                As shown in the image above, the spline image blending process involves:
+                <ol>
+                    <li>
+                        Creating a Laplacian stack for the image, which
+                        at each level applies a different bandpass filter to only collect
+                        frequencies of a certain level.
+                    </li>
+                    <li>
+                        Creating a Gaussian stack of the mask (simple left/right mask in this
+                        example), which allows smoother masking of lower frequency details.
+                    </li>
+                    <li>
+                        Multiply corresponding levels of the stack (top three rows, 
+                        corresponding to layers 1, 3, 5 of a 5-layer stack)
+                        [images are normalized per layer and per channel for visualization]
+                    </li>
+                    <li>
+                        Finally, collapse the stack and add the different levels of frequencies
+                        back together
+                    </li>
+                </ol>
+            </p>
+
+            <figure>
+                <img src="./images/2-4-flowers.jpg" class="gallery-photo">
+                <figcaption>
+                    two flowers blending 
+                    (backgrounds are not identical, making blending odd)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2-4-dog-cat.jpg" class="gallery-photo">
+                <figcaption>
+                    dog and cat blending (ellipsoid mask)
+                    (warmth equalizing and aligning the images would likely make
+                    blending look better, but hopefully it is obvious
+                    this is not a naive masking)
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <script>hljs.highlightAll();</script>
+</main>
+
+</html>
