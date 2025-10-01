@@ -295,8 +295,15 @@
                 </figcaption>
             </figure>
 
+            <figure>
+                <img src="./images/2-2-oski-labubu.jpg" class="gallery-photo">
+                <figcaption>
+                    oski & labubu hybrid image (final result)
+                </figcaption>
+            </figure>
+
             <p>
-                As shown in the picture above, the hybrid image process involves:
+                As shown in the pictures above, the hybrid image process involves:
                 <ol>
                     <li>
                         Aligning two images to match features (e.g. eyes are easiest)
@@ -315,13 +322,6 @@
                 </ol>
             </p>
 
-            <figure>
-                <img src="./images/2-2-oski-labubu.jpg" class="gallery-photo">
-                <figcaption>
-                    oski & labubu hybrid image (final result)
-                </figcaption>
-            </figure>
-
         </div>
     </article>
 
@@ -335,30 +335,6 @@
                     orange & apple blending (reconstruct Figure 3.42 (a) through (l))
                 </figcaption>
             </figure>
-
-            <p>
-                As shown in the image above, the spline image blending process involves:
-                <ol>
-                    <li>
-                        Creating a Laplacian stack for the image, which
-                        at each level applies a different bandpass filter to only collect
-                        frequencies of a certain level.
-                    </li>
-                    <li>
-                        Creating a Gaussian stack of the mask (simple left/right mask in this
-                        example), which allows smoother masking of lower frequency details.
-                    </li>
-                    <li>
-                        Multiply corresponding levels of the stack (top three rows, 
-                        corresponding to layers 1, 3, 5 of a 5-layer stack)
-                        [images are normalized per layer and per channel for visualization]
-                    </li>
-                    <li>
-                        Finally, collapse the stack and add the different levels of frequencies
-                        back together
-                    </li>
-                </ol>
-            </p>
 
             <figure>
                 <img src="./images/2-4-flowers.jpg" class="gallery-photo">
@@ -377,6 +353,30 @@
                 </figcaption>
             </figure>
         </div>
+
+         <p>
+        As shown in the images above, the spline image blending process involves:
+        <ol>
+            <li>
+                Creating a Laplacian stack for the image, which
+                at each level applies a different bandpass filter to only collect
+                frequencies of a certain level.
+            </li>
+            <li>
+                Creating a Gaussian stack of the mask (simple left/right mask in this
+                example), which allows smoother masking of lower frequency details.
+            </li>
+            <li>
+                Multiply corresponding levels of the stack (top three rows, 
+                corresponding to layers 1, 3, 5 of a 5-layer stack)
+                [images are normalized per layer and per channel for visualization]
+            </li>
+            <li>
+                Finally, collapse the stack and add the different levels of frequencies
+                back together
+            </li>
+        </ol>
+    </p>
     </article>
 
     <script>hljs.highlightAll();</script>
