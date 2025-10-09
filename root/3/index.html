@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Project 2</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../0/style.css">
+    <link rel="stylesheet" href="../1/style.css">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+
+<main role="main">
+    <h1>📸 Project 3</h1>
+    <h2>image warping and mosaicing</h2>
+
+    <article>
+        <h4> Part A.1 </h4>
+
+        <p>Image Set #1: Kitchen</p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/kitchen_1.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/kitchen_2.jpg" class="gallery-photo">
+                <figcaption>
+                    rotated
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>Image Set #2: Window</p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/window_1.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/window_2.jpg" class="gallery-photo">
+                <figcaption>
+                    rotated
+                </figcaption>
+            </figure>
+        </div>
+
+    </article>
+
+    <article>
+        <h4> Part A.2 </h4>
+
+        <p> 
+            Systems of equations are as derived in the Week 5 discussion worksheet. Briefly, finding
+            the homography can be rewritten from the form p<sub>1</sub>H = p<sub>2</sub>
+            to the form Ah = b instead in order to simplify solving using ordinary least squares. A should be
+            a (2N, 8) array where each set of points forms two rows in A of
+        </p>
+
+        <p>
+            [x<sub>1</sub> y<sub>1</sub> 1 0 0 0 -u<sub>1</sub>x<sub>1</sub>
+            -u<sub>1</sub>y<sub>1</sub>]
+        </p>
+        <p>
+            [0 0 0 x<sub>1</sub> y<sub>1</sub> 1 -v<sub>1</sub>x<sub>1</sub>
+            -v<sub>1</sub>y<sub>1</sub>]
+        </p>
+
+        <p> 
+            h is simply the (8, 1) homography matrix H flattened into a column vector 
+            (without h<sub>33</sub>, since we fix the scale factor to 1), and b is 
+            the set of points in the second image flattened as a (8, 1) column vector, so is of the form
+        </p>
+
+        <p>
+            [u<sub>1</sub> v<sub>1</sub> u<sub>2</sub> v<sub>2</sub> ... ]
+        </p>
+
+        <p> 
+            Correspondences were determined using the correspondence tool 
+            linked in the project deliverables description.
+        </p>
+
+        <p> Image Set #1: Kitchen </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/kitchen_correspondences.jpg" class="gallery-photo">
+                <figcaption>
+                    correspondences annotated
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/kitchen_equations.png" class="gallery-photo">
+                <figcaption>
+                    system of equations
+                    (only 5 points are shown for brevity)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/kitchen_homographymatrix.png" class="gallery-photo">
+                <figcaption>
+                    recovered homography matrix
+                </figcaption>
+            </figure>
+        </div>
+
+        <p> Image Set #2: Window </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/window_correspondences.jpg" class="gallery-photo">
+                <figcaption>
+                    correspondences annotated
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h4> Part A.3 </h4>
+
+        <p> Images are rectified to a manually defined rectangle. </p>
+
+        <p> Rectification: Book </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/book.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/book_nearestneighbor.png" class="gallery-photo">
+                <figcaption>
+                    nearest neighbor interpolation
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/book_bilinear.png" class="gallery-photo">
+                <figcaption>
+                    bilinear interpolation
+                </figcaption>
+            </figure>
+        </div>
+
+        <p> Rectification: Art </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/art.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/art_nearestneighbor.png" class="gallery-photo">
+                <figcaption>
+                    nearest neighbor interpolation
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/art_bilinear.png" class="gallery-photo">
+                <figcaption>
+                    bilinear interpolation
+                </figcaption>
+            </figure>
+        </div>
+
+        <p> Rectification: Sign </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/sign.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/sign_nearestneighbor.png" class="gallery-photo">
+                <figcaption>
+                    nearest neighbor interpolation
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/sign_bilinear.png" class="gallery-photo">
+                <figcaption>
+                    bilinear interpolation
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            With the higher resolution images, nearest neighbor and bilinear interpolation
+            do not seem to show obvious differences (which makes sense because the pixels are so
+            "small" to the human eye when all images are normalized to the same size). However, in
+            the lowest resolution image, bilinear interpolation slightly darkens the white book cover
+            background, probably because the interpolation leads to the black text slightly bleeding into the 
+            surrounding white cover. It is not obvious in this set of images, but nearest neighbor interpolation
+            would be expected to create odd "steps" at the edges since the edge pixels will feel "extended" rather
+            than smoothed out. 
+        </p>
+    </article>
+
+    <article>
+        <h4> Part A.4 </h4>
+
+        <p>
+            The mosaics were composed through the following method:
+            <ol>
+                <li>
+                    Create empty array for mosaic with size of the second (warped) image +
+                    translation offset from the warping process needed to fit the entire image 
+                    on the canvas
+                </li>
+                <li>
+                    If the mosaic pixel has an overlap of pixels from image 1 and image 2, I take a 
+                    weighted average of the two pixel values, where the weight is a 
+                    linear decay from 1 at the center of the source image to 0 at the edge of the source image;
+                    this creates a simple linear blend. (The total of the two weights is normalized to 1 to 
+                    prevent unintentionally darkening the image values).
+                </li>
+                <li>
+                    If the mosaic pixel is only from one image, I simply copy over the source image's
+                    pixel value (since I only want to apply the linear blend if the mosaic pixel overlaps with 
+                    both images to prevent darkening the image overall).
+                </li>
+            </ol>
+        </p>
+        
+        <p>
+            Transformation was done independently for each color channel then stacked together. An alpha channel was
+            used to track mosaic pixels with no source in either image. The rotated image is warped back to 
+            the original ("flat") image's perspective using nearest neighbor interpolation (for faster runtime).
+        </p>
+
+        <p> Mosaic #1: Kitchen (source images in A.1) </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/kitchen_mosaic.png" class="gallery-photo">
+                <figcaption>
+                    kitchen mosaic
+                </figcaption>
+            </figure>
+        </div>
+
+        <p> Mosaic #2: Window (source images in A.1) </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/window_mosaic.png" class="gallery-photo">
+                <figcaption>
+                    window mosaic (white artifacts are due to window not being clean, sorry)
+                </figcaption>
+            </figure>
+        </div>
+
+        <p> Mosaic #3: City</p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/city_1.jpg" class="gallery-photo">
+                <figcaption>
+                    city (original)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/city_2.jpg" class="gallery-photo">
+                <figcaption>
+                    city (rotated)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/city_mosaic.png" class="gallery-photo">
+                <figcaption>
+                    city mosaic (blending artifacts due to passing cars)
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+</main>
