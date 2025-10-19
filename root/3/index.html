@@ -277,4 +277,267 @@
             </figure>
         </div>
     </article>
+
+    <article>
+        <h4>Part B.1</h4>
+
+        <p>
+            The Harris corner detector, as implemented with the provided sample code with an 
+            edge cutoff of 20 pixels,
+            detects pixels where the gradient changes greatly in both directions.
+            Using the Harris corner detector yields an excess of selected points, with
+            most areas, other than patches of complete white on the cabinets, being detected
+            as corners.
+        </p>
+
+        <p>
+            Adaptive non-maximal suppression (ANMS) was implemented as described in Brown et al. to
+            select strong corners spaced out over the image.
+            <ol>
+                <li>
+                    Calculate the radius of suppression for each corner (distance for which the corner
+                    is the strongest corner in its radius)
+                    <ol>
+                        <li>
+                            For every other corner x<sub>j</sub>, check if the Harris corner
+                            detector strength is greater than c<sub>robust</sub> * the corner strength
+                            of the current corner x<sub>i</sub> (c<sub>robust</sub> of 0.9 is used, as
+                            the paper suggested)
+                        </li>
+                        <li>
+                            The radius of suppression is the minimum Euclidean distance 
+                            between x<sub>i</sub> and x<sub>j</sub>
+                            of all x<sub>j</sub> that are a sufficiently stronger corner.
+                        </li>
+                    </ol>
+                </li>
+                <li>
+                    Keep the top N corners with the largest radii of suppression (500 points is used,
+                    as the paper suggests)
+                </li>
+            </ol>
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/harriscorners_no_anms.jpg" class="gallery-photo">
+                <figcaption>
+                    Harris corner detector corners
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/harriscorners_anms.jpg" class="gallery-photo">
+                <figcaption>
+                    500 corners selected using ANMS
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h4>Part B.2</h4>
+
+        <p>
+            Converting the ANMS corners to feature descriptors was implemented as described in Brown et al.
+            to create blurred 8x8 descriptor patches for feature matching.
+            <ol>
+                <li>
+                    Smooth the input image with a Gaussian filter of size sigma=2.5. 
+                    (Since we space out 5 pixels between sampling a pixel for the descriptor,
+                    sigma=2.5 ensures that data from the neighboring 5 pixels informs each smoothed
+                    image pixel to prevent aliasing.)
+                </li>
+                <li>
+                    For the 40 x 40 px patch surrounding the ANMS corner, sample every 5 px to
+                    create a 8 x 8 px descriptor (if this patch 
+                    exceeds the edges of the image, the corner is discarded, since padding
+                    would negatively impact the pairing process)
+                </li>
+                <li>
+                    Normalize the descriptor by subtracting by the mean of the patch and dividing
+                    by the standard deviation of the patch. 
+                </li>
+            </ol>
+        </p>
+
+         <div class="image-gallery">
+            <figure>
+                <img src="./images/feature_descriptors.jpg" class="gallery-photo">
+                <figcaption>
+                    Examples of extracted feature descriptors in the bottom row,
+                    with original images
+                    of the ANMS corner shown in the top row
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h4> Part B.3 </h4>
+
+        <p>
+            Feature matching was implemented as described in Brown et al., to create quality matches
+            of the feature descriptors generated in B.2
+            <ol>
+                <li>
+                    For each corner, find the 1st and 2nd best nearest neighbor match based
+                    on the corner's feature descriptor.
+                </li>
+                <li>
+                    Accept the corner and the 1st best nearest neighbor match as a pair by
+                    thresholding with Lowe's method,
+                    which checks if the ratio of the distance to the 1st best nearest neighbor and 
+                    the distance to the 2nd best nearest neighbor exceeds a threshold
+                    (threshold = 0.7 was used, as suggested in Figure 6b of the paper)
+                </li>
+            </ol> 
+        </p>
+
+        <p>
+            As shown below, this method is able to extract some correct pairs, such as 8, 1,
+            2, 9, and 16, but many incorrect outlier pairs are also generated, such as 6, 7, 
+            and 13 (although most of the incorrect pairing is due to that corner not appearing in
+            the second image).
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/feature_matching.jpg" class="gallery-photo">
+                <figcaption>
+                    Corners matched by feature descriptors
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h4> Part B.4 </h4>
+
+        <p>
+            Finally, 4-point RANSAC was used, as described in lecture, to filter out 
+            outliers and compute the best homology matrix.
+            <ol>
+                <li>
+                    For each trial, pick 4 random points from the paired descriptors, which 
+                    allows direct calculation of H (since 4 points are required to exactly determine 
+                    the 8 degrees of freedom in H)
+                </li>
+                <li>
+                    Apply this estimate of H to all the paired descriptors and calculate 
+                    the error in the estimated H (distance between estimated H @ point 
+                    and true location of the paired point)
+                </li>
+                <li>
+                    Keep all points with an error less than a certain epsilon, and track the 
+                    largest set of inliers found in all the trials.
+                </li>
+                <li>
+                    Use this set of inliers as the quality point matches to estimate least squares H and 
+                    create the mosaic as done in Part A.
+                </li>
+            </ol>
+        </p>
+
+        <p>
+            Because this process was computationally inexpensive, 10,000 trials were used; an 
+            epsilon of 10 was chosen empirically.
+
+            From applying RANSAC, only true feature matches were kept, but several true matches 
+            were still discarded.
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/ransac_correspondences.jpg" class="gallery-photo">
+                <figcaption>
+                    Correspondences remaining after RANSAC filtering
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h4> Part B </h4>
+        <p> 
+            The same 3 mosaics as Part A are shown below, but constructed using the 
+            automatic image alignment process outlined in Part B.
+        </p>
+
+        <p>
+            The kitchen mosaic was the most difficult to create automatically, and 
+            required 100,000 iterations of RANSAC to find enough points to create a good 
+            homography. Many iterations of RANSAC failed because pair matches were only 
+            kept near the microwave, which led to incorrect homography estimations that distorted
+            the cabinets and edges of the images heavily. Slight artifacts in the 
+            dividing lines between cabinets and the ceiling light can still be seen. These 
+            images (full of large, repeating elements and non-complex patterns) seem to be
+            a much more difficult task for automatic mosaicing.
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/kitchen_mosaic.png" class="gallery-photo">
+                <figcaption>
+                    Kitchen (manual)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/kitchen_mosaic_auto.png" class="gallery-photo">
+                <figcaption>
+                    Kitchen (automatic - 6 points)
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            Epsilons of 1 were used in automatic mosaics of the window and city images, 
+            because this cutoff yielded enough points after RANSAC to compute a good
+            homography, possibly because these images are larger and do not contain as many 
+            repeating elements as the kitchen image. 
+        </p>
+
+        <p>
+            The window mosaic is an interesting case, because the automatic mosaicing 
+            actually results in a higher quality mosaic, with less distortions in 
+            the tree on the right side of the image, meaning that the automatic mosaic 
+            procedure actually found a better homography estimate. This is likely because 
+            pair correspondences in the tree leaves were found, preserving the right side of the image
+            correctly, which were too difficult to determine manually.
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/window_mosaic.png" class="gallery-photo">
+                <figcaption>
+                    Window (manual)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/window_mosaic_auto.png" class="gallery-photo">
+                <figcaption>
+                    Window (automatic - 11 points)
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            The city mosaic seems very similar between the manually and automatically created
+            mosaic.
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/city_mosaic.png" class="gallery-photo">
+                <figcaption>
+                    City (manual)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/city_mosaic_auto.png" class="gallery-photo">
+                <figcaption>
+                    City (automatic - 52 points)
+                </figcaption>
+            </figure>
+        </div>
+    </article>
 </main>
