@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Project 2</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../0/style.css">
+    <link rel="stylesheet" href="../1/style.css">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+
+<main role="main">
+    <h1>📸 Project 4</h1>
+    <h2>neural radiance fields</h2>
+
+    <article>
+        <h4> Part 0 </h4>
+
+        <p>
+            [Part 0.1] I first found the intrinsics and distortion coefficients of
+            my phone camera using images such as the one below with 6 ArUco tags,
+            from different distances and angles. The calibration was relatively successful,
+            with an RMS of 0.724.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/aruco.jpeg" class="gallery-photo">
+                <figcaption>
+                    6 ArUco tags for intrinsics calibration
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            [Part 0.2 - 0.4] I then used the same settings on my phone camera to capture
+            images of a stuffed bear (and one ArUco tag for calibrating world coordinates)
+            from different angles for NeRF representation in later parts. For each image, 
+            I used <code>cv2.solvePnP()</code> to determine the pose of the camera (camera 
+            to world matrix), with the cloud of camera poses and images displayed below. There
+            are no images taken from one angle, since it would block the single ArUco tag and 
+            disables world coordinate calculation. Finally, I then undistorted the images 
+            using the solved distortion coefficients.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/camera1.png" class="gallery-photo">
+                <figcaption>
+                    Cloud of cameras (top)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/camera2.png" class="gallery-photo">
+                <figcaption>
+                    Cloud of cameras (side)
+                </figcaption>
+            </figure>
+        </div>
+    </article>
+
+    <article>
+        <h4> Part 1 </h4>
+
+        <p>
+            In this part, I trained a simple neural network to represent a 2D image for the 
+            provided test image and an image from Part 0. 
+
+            I used the following architecture and trained for 1000 iterations
+            with a learning rate of 0.01:
+            <ul>
+                <li>
+                    positional encoding with max freq L = 10
+                </li>
+                <li>
+                    4 linear layers x width 256 nodes
+                </li>
+                <li>
+                    ReLU activation between linear layers
+                </li>
+                <li>
+                    Sigmoid activation before output to confine
+                    RGB values to [0, 1]
+                </li>
+            </ul>
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/fox_epoch_0.jpg" class="gallery-photo">
+                <figcaption>
+                    Fox image epoch 0
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/fox_epoch_100.jpg" class="gallery-photo">
+                <figcaption>
+                    Fox image epoch 100
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/fox_epoch_300.jpg" class="gallery-photo">
+                <figcaption>
+                    Fox image epoch 300
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/fox_epoch_500.jpg" class="gallery-photo">
+                <figcaption>
+                    Fox image epoch 500
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/fox_epoch_999.jpg" class="gallery-photo">
+                <figcaption>
+                    Fox image epoch 999
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/fox.jpg" class="gallery-photo">
+                <figcaption>
+                    Fox image target
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/fox_psnr.jpg" class="gallery-photo">
+                <figcaption>
+                    Fox image training PSNR curve
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            This same architecture did a good job on a photo from 
+            Part 0, although performed worse than the fox test image,
+            likely because the input images are very large (3000 x 4000).
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/bear_epoch_0.png" class="gallery-photo">
+                <figcaption>
+                    Bear image epoch 0
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_epoch_100.png" class="gallery-photo">
+                <figcaption>
+                    Bear image epoch 100
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_epoch_300.png" class="gallery-photo">
+                <figcaption>
+                    Bear image epoch 300
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_epoch_500.png" class="gallery-photo">
+                <figcaption>
+                    Bear image epoch 500
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_epoch_999.png" class="gallery-photo">
+                <figcaption>
+                    Bear image epoch 999
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear.jpeg" class="gallery-photo">
+                <figcaption>
+                    Bear image target
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_psnr.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear image training PSNR curve
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            Hyperparameter tuning
+            <ul>
+                <li>
+                    Layer width: below, I display models trained on layer
+                    widths of 16 versus 256; in the model using the same positional 
+                    encoding but less parameters in the layers, we can see that although 
+                    high frequency details are present, this is overall not a truthful
+                    representation of the input image, as the limited neurons are limited on 
+                    the capacity of information that can be captured
+                </li>
+                <li>
+                    Positional encoding frequency: below, I also display models trained on 
+                    positional encoding max frequency of 2 vs 10; as is very obvious in 
+                    the model with the same layer width but low positional encoding frequency,
+                    the image recapitulates the overall colors of the original image very well, but 
+                    there are only smoothed, low-frequency features and no details
+                </li>
+            </ul>
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/bear_16_2.png" class="gallery-photo">
+                <figcaption>
+                    Layer width: 16, L: 2
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_256_2.png" class="gallery-photo">
+                <figcaption>
+                    Layer width: 256, L: 2
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_16_10.png" class="gallery-photo">
+                <figcaption>
+                    Layer width: 16, L: 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_epoch_999.png" class="gallery-photo">
+                <figcaption>
+                    Layer width: 256, L: 10 (reproduced here for convenience)
+                </figcaption>
+            </figure>
+        </div>
+        
+    </article>
+
+    <article>
+        <h4> Part 2 </h4>
+
+        <p>
+            In the following parts, I train a NeRF representation of 
+            the 3D scene I took images from in Part 0.
+        </p>
+
+        <p>
+            The following parts were implemented as part of the Dataloader
+            class for the NeRF model.
+        </p>
+
+        <p>
+            [Part 2.1] Coordinate conversions
+            <ul>
+                <li>
+                    <code>camera_to_world</code> converts 
+                    <code>x_w = c2w @ x_c</code>
+                </li>
+                <li>
+                    <code>pixel_to_camera</code> converts 
+                    <code>x_c = s * (K_inv @ uv)</code>
+                </li>
+                <li>
+                    <code>pixel_to_ray</code> uses the 
+                    previous two functions to get the ray origin <code>ray_o</code> 
+                    (t vector from c2w) and the ray direction 
+                    <code>ray_d = x_w - ray_o</code>, normalized using its norm
+                </li>
+            </ul>
+        </p>
+
+        <p>
+            [Part 2.2] Sampling
+            <ul>
+                <li>
+                    <code>sample_rays(n)</code> from the image 
+                    (which is essentially
+                    <code>__get_item___</code> of the DataLoader) is done by first 
+                    pre-computing all rays for all pixels from all images using the 
+                    functions from Part 2.1, then randomly selecting N rays from 
+                    that flattened list of pre-computed pixels and their accompanying
+                    <code>ray_o</code> and <code>ray_d</code>
+                </li>
+
+                <li>
+                    <code>sample_along_rays(ray_o, ray_d, perturb=True, near, far, n_samples=64)</code>
+                    samples 64 points from along the provided ray using the simple equation 
+                    x = ray_o + ray_d * t. To try to cover more of the volume during training, 
+                    noise is added to t, which randomly samples [0, bin_width] (independently for 
+                    each sample and each ray) to slightly shift where the point is placed.
+                </li>
+            </ul>
+        </p>
+
+        <p>
+            [Part 2.3] An example visualization of 50 rays drawn during a training step 
+            are shown below.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/sampling.png" class="gallery-photo">
+                <figcaption>
+                    50 rays sampled during training iteration
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            [Part 2.4] The same model architecture is used on both the test lego dataset 
+            and my custom scene from Part 0.
+            <ul>
+                <li>
+                    input point on ray is positionally encoded using a 
+                    max frequency of L=10
+                </li>
+                <li>
+                    point passes through 8 fully connected layer of 256
+                    neurons and ReLU activations, with a skip connection re-injecting the 
+                    encoding after 4 layers
+                </li>
+                <li>
+                    density is predicted by a linear layer projecting from 256 to 
+                    1 dimension; IMPORTANTLY, I do not use ReLU activation after, because 
+                    as observed by others and myself (Ed #249d), ReLU tended to clamp the 
+                    density values to around 0, which resulted in the model tending to predict 
+                    entirely dark images. Softplus activation is used instead to try to better 
+                    encourage non-zero density values
+                </li>
+                <li>
+                    ray direction is positionally encoded using max frequency of L=4
+                </li>
+                <li>
+                    RGB values are predicted by injecting ray direction, an additional 
+                    256 -> 128 layer, ReLU activation, then a final 128 -> 3 dim layer with 
+                    sigmoid activation to restrict RGB values to [0, 1]
+                </li>
+            </ul>
+        </p>
+
+        <p>
+            [Part 2.5] <code>volrend(sigmas, rgbs, step_size)</code> is implemented as part 
+            of the training loop (so that can be differentiated and backpropagated during training)
+            using the equation provided. For simplification, instead of having the true deltas / step 
+            sizes sampled with perturbation from training, I just take the bin size of the point sampling as 
+            delta for every point. 
+        </p>
+
+        <h4> Lego Dataset Results </h4>
+
+        <p>
+            Training on the provided lego dataset was done for 1500 iterations, using 
+            the provided learning rate of 5e-4 and near/far parameters of 2.0 and 6.0.
+        </p>
+
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/lego_training_0.jpg" class="gallery-photo">
+                <figcaption>
+                    Lego NeRF epoch 0
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/lego_training_100.jpg" class="gallery-photo">
+                <figcaption>
+                    Lego NeRF epoch 100
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/lego_training_500.jpg" class="gallery-photo">
+                <figcaption>
+                    Lego NeRF epoch 500
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/lego_training_1000.jpg" class="gallery-photo">
+                <figcaption>
+                    Lego NeRF epoch 1000
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/lego_training_1500.jpg" class="gallery-photo">
+                <figcaption>
+                    Lego NeRF epoch 1500
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/lego_psnr.jpg" class="gallery-photo">
+                <figcaption>
+                    Lego NeRF validation PSNR (average on all 10 images)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/lego_nerf.gif" class="gallery-photo">
+                <figcaption>
+                    Lego NeRF scene (60 novel test camera poses)
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4> Part 2.6 </h4>
+        <p>
+            Training on my own dataset was done for 2000 iterations. Although I 
+            initially trained with the given learning rate of 5e-4, the validation images 
+            were improving too slowly even after 3000 iterations despite "looking" 
+            correct, so I increased learning rate to 5e-3. Most importantly, since my 
+            images were taken much closer to the object, I had to try out a couple different 
+            (near, far) parameters, but the best results came from (0.25, 3) meters. The training 
+            was overall successful in replicating the main object (stuffed bear) and the ArUco tag (if I 
+            were to do this again, I would clear the scene in the background to reduce noise)
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/bear_training_0.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF epoch 0
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_training_100.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF epoch 100
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_training_500.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF epoch 500
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_training_1000.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF epoch 1000
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_training_1500.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF epoch 1500
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_training_1999.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF epoch 1999
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_nerf_psnr.jpg" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF validation PSNR (average on all 6 images)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/bear_nerf.gif" class="gallery-photo">
+                <figcaption>
+                    Bear NeRF scene (50 novel test camera poses)
+                </figcaption>
+            </figure>
+        </div>
+        
+    </article>
+
+</main>
