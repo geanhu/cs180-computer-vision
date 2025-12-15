@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Project 5</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../0/style.css">
+    <link rel="stylesheet" href="../1/style.css">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+
+<main role="main">
+    <h1>📸 Project 5</h1>
+    <h2>diffusion models</h2>
+
+    <article>
+        <h4> Part 0 </h4>
+
+        <p>
+            The following images were generated using the DeepFloyd IF diffusion model
+            with 20 diffusion timesteps and the captioned text prompts. 
+            <code>seed = 100</code> is used
+            for this and following parts, unless stated otherwise.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/0/zebra.png" class="gallery-photo">
+                <figcaption>
+                    a zebra running in the desert
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/0/tuxedo.png" class="gallery-photo">
+                <figcaption>
+                    a painting of a man in a tuxedo
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            Below, I compare image generation with the same prompt with 5 timesteps, 20 timesteps, and
+            100 timesteps. With t = 5, because each diffusion step is longer,
+            the image generated is likely something close to the training data 
+            and is very realistic. Additionally, the larger timesteps means text conditioning
+            had less of an effect, since "sledding" is not shown. With t = 100, since the steps taken are very 
+            small, the image is very unrealistic and incorporates many different details compared to t = 5 and t = 20,
+            likely because the generation was able to pull from many different parts of the natural image manifold.
+            With t = 20, we achieve a good balance between matching the text prompt and not incorporating too many 
+            unrelated details / focus on the main subject of the penguin.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/0/penguin_5.png" class="gallery-photo">
+                <figcaption>
+                    a penguin sledding in snow (t = 5)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/0/penguin.png" class="gallery-photo">
+                <figcaption>
+                    a penguin sledding in snow (t = 20)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/0/penguin_100.png" class="gallery-photo">
+                <figcaption>
+                    a penguin sledding in snow (t = 100)
+                </figcaption>
+            </figure>
+        </div>
+
+    </article>
+
+    <article>
+        <h3> Part A</h3>
+
+        <h4> Part 1.1 </h4>
+        <p>
+            The forward noising process of diffusion is implemented by 
+            <code>im_noisy = torch.sqrt(alpha) * im + torch.srt(1 - alpha) * (torch.randn_like(im))</code>,
+            which uses <code>alpha</code> as the weight to inject random noise into the original image.
+            I use the same noise schedule as the original DeepFloyd training.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile.png" class="gallery-photo">
+                <figcaption>
+                    campanile
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_250.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 250)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_500.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 500)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_750.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 750)
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4> Part 1.2 </h4>
+        <p>
+            Gaussian blur filtering was used to try to remove noise with the following kernel sizes;
+            as expected, this process does very poorly.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_250.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 250)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_250_gaussian.png" class="gallery-photo">
+                <figcaption>
+                    gaussian blur denoising (noise t = 250)
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_500.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 500)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_500_gaussian.png" class="gallery-photo">
+                <figcaption>
+                    gaussian blur denoising (noise t = 500)
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_750.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 750)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_750_gaussian.png" class="gallery-photo">
+                <figcaption>
+                    gaussian blur denoising (noise t = 750)
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.3</h4>
+        <p>
+            One-step denoising was completed using DeepFloyd's pretrained UNet denoiser, 
+            where I simply use the one-step noise estimate to solve the previously described
+            noising formula for the original, clean image. This process results in much 
+            better results than the gaussian blurring, but still performs poorly at high noise levels,
+            as many details (e.g. tower features, buildings in background) are lost.
+        </p>
+        <p>
+            <code>im = im_noisy - torch.sqrt(1 - alpha) * noise_est</code>
+        </p>
+        <p>
+            <code>im = im / torch.sqrt(alpha)</code>
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_250.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 250)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_250_onestep.png" class="gallery-photo">
+                <figcaption>
+                    one step denoising (noise t = 250)
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_500.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 500)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_500_onestep.png" class="gallery-photo">
+                <figcaption>
+                    one step denoising (noise t = 500)
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_750.png" class="gallery-photo">
+                <figcaption>
+                    campanile (noise t = 750)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_750_onestep.png" class="gallery-photo">
+                <figcaption>
+                    one step denoising (noise t = 750)
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.4</h4>
+        <p>
+            Iterative denoising was implemented following equation A.3; essentially, instead of taking
+            one step from t = 990 to 0, I take strided steps of stride = 30. Each previous, less noisy 
+            timestep is iteratively predicted by taking a weighted sum of 
+            the one-step denoising using the current noise estimate and the noisy image (+ random variance).
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_690_iterative.png" class="gallery-photo">
+                <figcaption>
+                    campanile (iterative denoising t=690)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_540_iterative.png" class="gallery-photo">
+                <figcaption>
+                    campanile (iterative denoising t=540)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_390_iterative.png" class="gallery-photo">
+                <figcaption>
+                    campanile (iterative denoising t=390)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_240_iterative.png" class="gallery-photo">
+                <figcaption>
+                    campanile (iterative denoising t=240)
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_90_iterative.png" class="gallery-photo">
+                <figcaption>
+                    campanile (iterative denoising t=90)
+                </figcaption>
+            </figure>
+        </div>
+        <p>
+            As seen in the comparisons to one step denoising from t = 690, this method recovers much more
+            detail (even if it is not necessarily correct detail) and prevents the blurring effect seen in 
+            gaussian blurring and one step denoising. Iteratively taking steps forces cleaner timesteps to
+            recover finer details and prevents the poor estimate of details from the noisier timesteps from 
+            dominating.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile.png" class="gallery-photo">
+                <figcaption>
+                    campanile
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_iterative.png" class="gallery-photo">
+                <figcaption>
+                    campanile iterative denoising
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_onestep.png" class="gallery-photo">
+                <figcaption>
+                    campanile one step denoising
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_gaussian.png" class="gallery-photo">
+                <figcaption>
+                    campanile gaussian denoising
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.5</h4>
+        <p>
+            Using the same iterative denoising function, I sample "random" images from noise by 
+            passing in pure noise instead of a slightly noised original image. With no conditioning, 
+            most of these images do not have a clear subject.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/sample_1.png" class="gallery-photo">
+                <figcaption>
+                    sample 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_2.png" class="gallery-photo">
+                <figcaption>
+                    sample 2
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_3.png" class="gallery-photo">
+                <figcaption>
+                    sample 3
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_4.png" class="gallery-photo">
+                <figcaption>
+                    sample 4
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_5.png" class="gallery-photo">
+                <figcaption>
+                    sample 5
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.6</h4>
+        <p>
+            Classifier-free guidance is implemented by conditioning on the prompt "a high quality image"
+            instead of just random, unconditioned noise. In each denoising timestep, I push the model
+            closer towards this prompt by adding <code>weight * (noise_est - uncond_noise_est)</code> (what direction
+            to move in to get a higher quality image) to the unconditional output. This method 
+            produces better images with a clear subject and resemble images naturally seen.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/sample_cfg_1.png" class="gallery-photo">
+                <figcaption>
+                    sample 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_cfg_2.png" class="gallery-photo">
+                <figcaption>
+                    sample 2
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_cfg_3.png" class="gallery-photo">
+                <figcaption>
+                    sample 3
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_cfg_4.png" class="gallery-photo">
+                <figcaption>
+                    sample 4
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/sample_cfg_5.png" class="gallery-photo">
+                <figcaption>
+                    sample 5
+                </figcaption>
+            </figure>
+        </div>
+
+        <part>Part 1.7</part>
+        <p>
+            The same method can be used to use the "a high quality photo" text prompt to condition 
+            the same "denoising" process for images implemented above. At earlier timesteps where the 
+            input image is noised heavily, the images diffused are similar to the results from 1.6 diffusing
+            from pure noise. At later timesteps where the input image is 
+            less noised, more and more of the original image is recovered. Importantly, compared to earlier iterative denoising, 
+            conditioning on the text prompt forces each output image to retain high levels of detail (even if the 
+            details are hallucinations). The following examples of the SDEdit algorithm are applied on 
+            realistic images.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_sdedit_1.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_sdedit_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_sdedit_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_sdedit_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_sdedit_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile.png" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/lemon_sdedit_1.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_sdedit_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_sdedit_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_sdedit_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_sdedit_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon.jpg.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/child_sdedit_1.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_sdedit_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_sdedit_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_sdedit_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_sdedit_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child.jpg.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+
+        <part>Part 1.7.1</part>
+        <p>
+            The same method is applied to drawn (rather than natural, realistic) images, which 
+            shows with noisier input, realisitic images are generated with more and more similar
+            color composition. At later <code>i_start</code> (less noisy input image), drawing-like images 
+            are generated instead that recover the original input fairly well, even in the case of the 
+            last example where the input is random scribbles. 
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/web_sdedit_1.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/web_sdedit_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/web_sdedit_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/web_sdedit_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/web_sdedit_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/web.png" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/drawn1_sdedit_1.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn_sdedit_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn_sdedit_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn_sdedit_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn_sdedit_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn.png" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/drawn2_sdedit_1.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn2_sdedit_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn2_sdedit_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn2_sdedit_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn2_sdedit_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/drawn2.png" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.7.2</h4>
+        <p>
+            Inpainting, where only part of an original image is diffused, can be done using the same 
+            generation process from random noise, except areas outside of the designated mask are forced to be the 
+            same as the original image at each timestep. Importantly, this means that the diffusion process can 
+            "see" the entire image as context, which, as shown in the examples, allows the process to 
+            generate "reasonable" inpaints (e.g. lighthouse top for campanile instead of clock, 
+            tomato next to lemons instead of plants, torso with shirt for child).
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile.png" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_inpaint_mask.png" class="gallery-photo">
+                <figcaption>
+                    mask to inpaint
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_inpaint_replace.png" class="gallery-photo">
+                <figcaption>
+                    area to inpaint
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_inpaint_inpainted.png" class="gallery-photo">
+                <figcaption>
+                    inpainted
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/lemon.jpg.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_inpaint_mask.png" class="gallery-photo">
+                <figcaption>
+                    mask to inpaint
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_inpaint_replace.png" class="gallery-photo">
+                <figcaption>
+                    area to inpaint
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_inpaint_inpainted.png" class="gallery-photo">
+                <figcaption>
+                    inpainted
+                </figcaption>
+            </figure>
+            <div class="image-gallery">
+            <figure>
+                <img src="./images/1/child.jpg.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_inpaint_mask.png" class="gallery-photo">
+                <figcaption>
+                    mask to inpaint
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_inpaint_replace.png" class="gallery-photo">
+                <figcaption>
+                    area to inpaint
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_inpaint_inpainted.png" class="gallery-photo">
+                <figcaption>
+                    inpainted
+                </figcaption>
+            </figure>
+        </div>
+        
+        <h4>Part 1.7.3</h4>
+        <p>
+            The same SDEdit algorithm can be used to condition on custom text prompts instead of 
+            the "high quality photo" prompt. Similarly, with noisier input image, the text prompt is 
+            more influential on the image, but with cleaner input images, the text prompt is 
+            less influential and the original image is mostly recovered.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/campanile_text_1.png" class="gallery-photo">
+                <figcaption>
+                    "a stick of butter"
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_text_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_test_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_text_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile_text_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/campanile.png" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/lemon_text_1.png" class="gallery-photo">
+                <figcaption>
+                    "apple pie"
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_text_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_text_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_text_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon_text_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/lemon.jpg.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/child_text_1.png" class="gallery-photo">
+                <figcaption>
+                    "old man"
+                    SDEdit i_start = 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_text_5.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_text_7.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 7
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_text_10.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child_text_20.png" class="gallery-photo">
+                <figcaption>
+                    SDEdit i_start = 20
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/child.jpg.jpg" class="gallery-photo">
+                <figcaption>
+                    original
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.8</h4>
+        <p>
+            Using the same CFG diffusion process, we can generate visual anagrams where inverting the image 
+            leads to a different appearance and subject. This was done by averaging the noise estimates
+            (and variance) of 
+            prompt 1 and the vertically flipped noise estimates of prompt 2.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/illusion_butterfly_women.png" class="gallery-photo">
+                <figcaption>
+                    "a pencil sketch of a butterfly"
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/illusion_women_butterfly.png" class="gallery-photo">
+                <figcaption>
+                    "a pencil sketch of women dancing in dresses"
+                </figcaption>
+            </figure>
+        </div>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/illusion_man_desert.png" class="gallery-photo">
+                <figcaption>
+                    "a painting of a sleeping man"
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/illusion_desert_man.png" class="gallery-photo">
+                <figcaption>
+                    "a painting of an oasis in a desert"
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.9</h4>
+        <p>
+            Similar to part 1.8, the noise estimate can be blended to create hybrid images that appear 
+            like prompt 1 from further and prompt 2 from further. This was done by using a gaussian 
+            filter of kernel = 33 sigma = 2 where the first prompt noise estimate is low pass filtered 
+            (gaussian blur applied) and the second prompt noise estimate is high pass filtered (original
+            image - gaussian blur applied), then the results are combined. Variance was processed in the same 
+            manner.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/1/hybrid_butterfly_women.png" class="gallery-photo">
+                <figcaption>
+                    "a pencil sketch of a butterfly" and "a pencil sketch of women dancing in dresses"
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/1/hybrid_waterfall_fridge.png" class="gallery-photo">
+                <figcaption>
+                    "a photo of a waterfall" and "a photo of a refrigerator"
+                </figcaption>
+            </figure>
+        </div>
+        
+    </article>
+
+    <article>
+        <h3>Part B</h3>
+
+        <h4>Part 1.2</h4>
+        <p>
+            To noise the input MNIST images, random noise is simply added with 
+            <code>x + torch.randn_like(x) * noise_level</code>
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2/noised_examples.PNG" class="gallery-photo">
+                <figcaption>
+                    noised digits at different noise levels
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.2.1</h4>
+        <p>
+            An uncondition UNet model was trained to denoise MNIST images with 
+            noise level = 0.5. After 5 epochs, the model does a reasonable job of 
+            reconstructing the input images (with slight blur).
+        </p>
+        <p>
+            Training was done using a batch size of 256, constant learning rate of 1e-4, and 
+            layer size of 128.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2/part-1-2-1-training.png" class="gallery-photo">
+                <figcaption>
+                    training curve
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/epoch1.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/epoch5.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 5
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.2.2</h4>
+        <p>
+            As expected, the model does a poor job of denoising images with more noise 
+            than the noise level = 0.5 that the model was trained on.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2/ood.png" class="gallery-photo">
+                <figcaption>
+                    model inference on varying noise levels
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 1.2.3</h4>
+        <p>
+            Using the unconditional UNet model to diffuse images from random noise instead 
+            always yields images of the "average" digit. This is expected, since 
+            because we are using MSE loss, the model 
+            simply tries to fit the output the best to all digits that it has seen, which 
+            would output an average overlay of every single digit. Model convergence is 
+            stable because the model simply converges on this average digit, although the loss 
+            is higher than the previous part, as the average digit has some distance from each 
+            digit example.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2/uncond_training.png" class="gallery-photo">
+                <figcaption>
+                    training curve
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/uncond_epoch1.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/uncond_epoch5.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 5
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 2.2</h4>
+        <p>
+            A flow matching UNet is trained which instead takes iterative steps towards the output image, allowing 
+            the output image to land somewhere "on" the digit image manifold, instead of an average of the 
+            image manifold. <scale>t</scale> is injected into the model using a fully connected layer that projects
+            scalar <code>t</code> to the dimensions of the convolution blocks. Each training sample is independently noised to 
+            a [0, 1) time step. To account for these changes, 
+            instead of previously where the loss was simply the difference of the output image from the input image, 
+            the loss is instead the difference between the predicted velocity and the difference of the noised 
+            image at time t and the original image (the flow!). 
+        </p>
+        <p>
+            Training was completed using a batch size of 64, a hidden layer size of 64,
+            and a learning rate of 1e-2 that exponentially decays per epoch with gamma = (0.1 ** (1 / num_epochs)).
+        </p>
+        <p>
+            Although this model is able to generate non-averaged outputs, the digits generated 
+            still do not clearly resemble a certain digit and are not at the quality of the input training data.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2/timecond_training.png" class="gallery-photo">
+                <figcaption>
+                    training curve
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/timecond_epoch1.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/timecond_epoch5.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/timecond_epoch10.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 10
+                </figcaption>
+            </figure>
+        </div>
+
+        <h4>Part 2.5</h4>
+        <p>
+            To encourage the generated digits to conform to specific digit classes, we also 
+            input the classes of the training images using a fully connected layer that projects from 
+            the one-hot encoded class to the convolution dimensions. A dropout rate of 0.1 is used which 
+            results in no class conditioning. Training was completed with the sample model parameters as above.
+        </p>
+        <p>
+            As shown, this model results in significantly higher quality digits generated, and each generated 
+            image clearly corresponds to a certain class.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2/classcond_training.png" class="gallery-photo">
+                <figcaption>
+                    training curve
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/classcond_epoch1.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/classcond_epoch5.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 5
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/classcond_epoch10.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 10
+                </figcaption>
+            </figure>
+        </div>
+
+        <p>
+            If a scheduler is not used, I would need to lower the very high learning rate of 1e-2
+            to prevent the model from "overshooting" the correct solution early. Using a learning rate of 1e-4 
+            instead, I compensated by training for more epochs, as it may take longer for 
+            the solution to converge (which is shown through the noisier training curve). As shown, 
+            with a slower learning rate to compensate for not using a scheduler, it takes about 30 epochs 
+            to reach the same quality of output images.
+        </p>
+        <div class="image-gallery">
+            <figure>
+                <img src="./images/2/noscheduler_training.png" class="gallery-photo">
+                <figcaption>
+                    training curve
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/noscheduler_epoch1.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 1
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/noscheduler_epoch10.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 10
+                </figcaption>
+            </figure>
+            <figure>
+                <img src="./images/2/noscheduler_epoch30.PNG" class="gallery-photo">
+                <figcaption>
+                    epoch 30
+                </figcaption>
+            </figure>
+        </div>
+
+    </article>
+
+</main>
